@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 企業モデル
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String   // 企業名
+  domain    String?  // ドメイン名（例: example.com）
+  logo      String?  // ロゴURL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  useCases UseCase[] // 会社の活用事例一覧
+  users    User[]    // 会社に所属するユーザー一覧
+}
+
+// ユーザーモデル
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  role      String   @default("USER") // ADMIN, USER
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  useCases   UseCase[]   // ユーザーが投稿した活用事例
+  prompts    Prompt[]    // ユーザーが投稿したプロンプト
+  bookmarks  Bookmark[]  // ユーザーのブックマーク
+}
+
+// カテゴリモデル
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   // カテゴリ名
+  description String?  // カテゴリの説明
+  icon        String?  // アイコン（絵文字など）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  useCases    UseCase[]    // このカテゴリの活用事例一覧
+  prompts     Prompt[]     // このカテゴリのプロンプト一覧
+}
+
+// 活用事例モデル
+model UseCase {
+  id          Int      @id @default(autoincrement())
+  title       String   // 事例タイトル
+  description String   // 事例の説明
+  content     String   // 事例の詳細コンテンツ
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  companyId   Int
+  company     Company  @relation(fields: [companyId], references: [id])
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  published   Boolean  @default(false) // 公開状態
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bookmarks  Bookmark[]  // この事例に対するブックマーク
+}
+
+// プロンプトモデル
+model Prompt {
+  id          Int      @id @default(autoincrement())
+  title       String   // プロンプトタイトル
+  description String?  // プロンプトの説明
+  content     String   // プロンプトの内容
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  published   Boolean  @default(false) // 公開状態
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bookmarks  Bookmark[]  // このプロンプトに対するブックマーク
+}
+
+// ブックマークモデル
+model Bookmark {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  useCaseId Int?
+  useCase   UseCase? @relation(fields: [useCaseId], references: [id])
+  promptId  Int?
+  prompt    Prompt?  @relation(fields: [promptId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, useCaseId, promptId])
+}
